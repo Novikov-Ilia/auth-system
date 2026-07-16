@@ -19,5 +19,8 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(max_length=100)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
             ],
+            options={
+                'db_table': 'roles',
+            },
         ),
     ]
