@@ -11,7 +11,10 @@ class RegistrationViewTests(APITestCase):
     password = 'StrongPassword123!'
 
     def setUp(self):
-        self.role = Role.objects.create(code='user', name='Пользователь')
+        self.role, _ = Role.objects.get_or_create(
+            code='user',
+            defaults={'name': 'Пользователь'},
+        )
         self.payload = {
             'first_name': 'Илья',
             'last_name': 'Новиков',

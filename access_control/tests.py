@@ -6,7 +6,23 @@ from access_control.models import Role
 
 class RoleModelTests(TestCase):
     def setUp(self):
-        self.role = Role.objects.create(code='user', name='Пользователь')
+        self.role, _ = Role.objects.get_or_create(
+            code='user',
+            defaults={'name': 'Пользователь'},
+        )
+
+    def test_initial_roles_are_available(self):
+        roles = dict(
+            Role.objects.filter(code__in=['user', 'admin']).values_list('code', 'name')
+        )
+
+        self.assertEqual(
+            roles,
+            {
+                'user': 'Пользователь',
+                'admin': 'Администратор',
+            },
+        )
 
     def test_string_representation_returns_name(self):
         self.assertEqual(str(self.role), 'Пользователь')
