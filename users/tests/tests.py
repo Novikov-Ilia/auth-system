@@ -1,3 +1,4 @@
+from django.contrib.auth.hashers import identify_hasher
 from django.db import IntegrityError, transaction
 from django.db.models.deletion import RestrictedError
 from django.test import TestCase
@@ -11,7 +12,10 @@ class UserModelTests(TestCase):
     password = 'StrongPassword123!'
 
     def setUp(self):
-        self.role = Role.objects.create(code='user', name='Пользователь')
+        self.role, _ = Role.objects.get_or_create(
+            code='user',
+            defaults={'name': 'Пользователь'},
+        )
 
     def create_user(self, **overrides):
         data = {
@@ -50,6 +54,11 @@ class UserModelTests(TestCase):
         self.assertEqual(user.email, 'user@example.com')
         self.assertNotEqual(user.password, self.password)
         self.assertTrue(user.check_password(self.password))
+
+    def test_create_user_stores_password_with_bcrypt(self):
+        user = self.create_user()
+
+        self.assertEqual(identify_hasher(user.password).algorithm, 'bcrypt_sha256')
 
     def test_created_and_updated_timestamps_are_set(self):
         user = self.create_user()
