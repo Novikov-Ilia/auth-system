@@ -12,7 +12,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    deleted_at= models.DateTimeField(null=True, blank=True)
+    deleted_at= models.DateTimeField(default=None, null=True, blank=True)
 
     role = models.ForeignKey(
         'access_control.Role',
