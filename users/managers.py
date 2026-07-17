@@ -7,12 +7,9 @@ class UserManager(BaseUserManager):
         email = email.strip()
 
         if not email:
-            raise ValueError('Передана пустая почта')
+            raise ValueError('Введена пустая почта')
         
-        name, domain = email.rsplit('@', 1)
-        norm_email = name + '@' + domain.lower()
-
-        return norm_email
+        return email.lower()
 
     def create_user(self, /, email: str, passwd: str, **extra_fields: dict):
         if not email:
