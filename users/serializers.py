@@ -16,7 +16,6 @@ class RegistrationSerializer(serializers.ModelSerializer):
                 lookup='iexact',
                 message='Пользователь с таким email уже существует.',
             ),
-            EmailValidator(),
         ],
     )
     class Meta:
