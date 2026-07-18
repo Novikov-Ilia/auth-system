@@ -1,6 +1,8 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
 from .managers import UserManager
+import uuid
+from django.utils import timezone
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -23,3 +25,27 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ["first_name", "last_name"]
     objects = UserManager()
+
+
+class AuthSession(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    jti = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    user = models.ForeignKey(
+        'User',
+        related_name='auth_sessions',
+        on_delete=models.CASCADE,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(db_index=True)
+    revoked_at = models.DateTimeField(null=True, blank=True, default=None)
+
+    def __str__(self):
+        return f'{self.user.email}: {self.jti}'    
+
+    @property
+    def is_active(self) -> bool:
+        return (
+            self.revoked_at is None
+            and self.expires_at > timezone.now()
+        )
