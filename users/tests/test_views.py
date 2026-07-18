@@ -64,7 +64,7 @@ class RegistrationViewTests(APITestCase):
     def test_register_rejects_duplicate_email_case_insensitively(self):
         User.objects.create_user(
             email='user@example.com',
-            passwd=self.password,
+            password=self.password,
             first_name='Илья',
             last_name='Новиков',
             role=self.role,

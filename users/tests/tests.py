@@ -20,7 +20,7 @@ class UserModelTests(TestCase):
     def create_user(self, **overrides):
         data = {
             'email': 'User@EXAMPLE.COM',
-            'passwd': self.password,
+            'password': self.password,
             'first_name': 'Илья',
             'last_name': 'Новиков',
             'role': self.role,
@@ -87,7 +87,7 @@ class UserModelTests(TestCase):
     def test_create_superuser_returns_user_with_required_flags(self):
         user = User.objects.create_superuser(
             email='Admin@EXAMPLE.COM',
-            passwd=self.password,
+            password=self.password,
             first_name='Илья',
             last_name='Новиков',
             role=self.role,
@@ -105,7 +105,7 @@ class UserModelTests(TestCase):
         ):
             User.objects.create_superuser(
                 email='admin@example.com',
-                passwd=self.password,
+                password=self.password,
                 first_name='Илья',
                 last_name='Новиков',
                 role=self.role,

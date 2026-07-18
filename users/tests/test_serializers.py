@@ -78,7 +78,7 @@ class RegistrationSerializerTests(TestCase):
     def test_duplicate_email_is_rejected_case_insensitively(self):
         User.objects.create_user(
             email='user@example.com',
-            passwd=self.password,
+            password=self.password,
             first_name='Илья',
             last_name='Новиков',
             role=self.role,
