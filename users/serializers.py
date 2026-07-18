@@ -60,7 +60,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
         return User.objects.create_user(
             email=email,
-            passwd=password,
+            password=password,
             role=role,
             **validated_data,
         )
