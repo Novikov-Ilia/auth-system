@@ -1,9 +1,11 @@
 import uuid
+from datetime import timedelta
 
 import jwt as pyjwt
 from django.conf import settings
 from django.test import override_settings
 from django.urls import resolve, reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -11,7 +13,7 @@ from access_control.models import Role
 from services.jwt import issue_access_token
 from users.models import AuthSession, User
 from users.serializers import LoginSerializer
-from users.views import LoginView
+from users.views import LoginView, MeView
 
 
 @override_settings(
@@ -109,3 +111,65 @@ class LoginTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("non_field_errors", response.data)
         self.assertEqual(AuthSession.objects.count(), 0)
+
+
+    def test_me_url_resolves_to_me_view(self):
+        match = resolve("/api/auth/me/")
+
+        self.assertIs(match.func.view_class, MeView)
+
+    def test_me_returns_authenticated_user_profile(self):
+        token = issue_access_token(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+        response = self.client.get(reverse("me"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data,
+            {
+                "id": self.user.id,
+                "email": self.user.email,
+                "first_name": self.user.first_name,
+                "last_name": self.user.last_name,
+                "middle_name": self.user.middle_name,
+                "role": {"code": "user", "name": "Пользователь"},
+            },
+        )
+
+    def test_me_rejects_request_without_access_token(self):
+        response = self.client.get(reverse("me"))
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response["WWW-Authenticate"], "Bearer")
+
+
+    def test_me_rejects_invalid_bearer_token(self):
+        self.client.credentials(HTTP_AUTHORIZATION="Bearer invalid-token")
+
+        response = self.client.get(reverse("me"))
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response["WWW-Authenticate"], "Bearer")
+
+    def test_me_rejects_revoked_session(self):
+        token = issue_access_token(self.user)
+        session = AuthSession.objects.get(user=self.user)
+        session.revoked_at = timezone.now()
+        session.save(update_fields=["revoked_at"])
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+        response = self.client.get(reverse("me"))
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_me_rejects_expired_session(self):
+        token = issue_access_token(self.user)
+        session = AuthSession.objects.get(user=self.user)
+        session.expires_at = timezone.now() - timedelta(seconds=1)
+        session.save(update_fields=["expires_at"])
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+        response = self.client.get(reverse("me"))
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
