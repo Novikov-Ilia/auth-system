@@ -1,10 +1,10 @@
-from django.core.validators import EmailValidator
 from django.contrib.auth.password_validation import validate_password as django_validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.validators import UniqueValidator
 from rest_framework import serializers
 from .models import User
 from access_control.models import Role
+from .managers import UserManager
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -64,3 +64,21 @@ class RegistrationSerializer(serializers.ModelSerializer):
             role=role,
             **validated_data,
         )
+    
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True, trim_whitespace=False)
+
+    def validate(self, attrs) -> dict:
+        email = UserManager.normalize_email(attrs.get('email'))
+        password = attrs.get('password')
+
+        user = User.objects.filter(email=email).first()
+
+        if not user or not user.is_active or not user.check_password(password):
+            raise serializers.ValidationError('Неверный email или пароль')
+        
+        return {
+            'user': user,
+        }
