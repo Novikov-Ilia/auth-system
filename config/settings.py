@@ -122,3 +122,9 @@ PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.BCryptSHA256PasswordHasher",
     "django.contrib.auth.hashers.PBKDF2PasswordHasher",
 ]
+
+JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
+JWT_ALGORITHM = "HS256"
+JWT_ACCESS_TTL_MINUTES = int(
+    os.getenv("JWT_ACCESS_TTL_MINUTES", "60")
+)
