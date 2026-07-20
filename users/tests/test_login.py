@@ -13,7 +13,7 @@ from access_control.models import Role
 from services.jwt import issue_access_token
 from users.models import AuthSession, User
 from users.serializers import LoginSerializer
-from users.views import LoginView, MeView
+from users.views import LoginView, LogoutView, MeView
 
 
 @override_settings(
@@ -173,3 +173,27 @@ class LoginTests(APITestCase):
         response = self.client.get(reverse("me"))
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+    def test_logout_url_resolves_to_logout_view(self):
+        match = resolve("/api/auth/logout/")
+
+        self.assertIs(match.func.view_class, LogoutView)
+
+    def test_logout_revokes_current_session_and_invalidates_token(self):
+        token = issue_access_token(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+        logout_response = self.client.post(reverse("logout"))
+        session = AuthSession.objects.get(user=self.user)
+        me_response = self.client.get(reverse("me"))
+
+        self.assertEqual(logout_response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertIsNotNone(session.revoked_at)
+        self.assertEqual(me_response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_logout_rejects_request_without_access_token(self):
+        response = self.client.post(reverse("logout"))
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response["WWW-Authenticate"], "Bearer")
