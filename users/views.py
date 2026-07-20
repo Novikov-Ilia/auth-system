@@ -2,7 +2,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from django.utils import timezone
+
 from .authentication import JWTAuthentication
+from users.models import AuthSession
 from .serializers import LoginSerializer, RegistrationSerializer
 from services import jwt
 
@@ -55,3 +58,16 @@ class MeView(APIView):
                 },
             }
         )
+
+
+class LogoutView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        jti = request.auth['jti']
+        session = AuthSession.objects.filter(jti=jti).first()
+
+        session.revoked_at = timezone.now()
+        session.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
