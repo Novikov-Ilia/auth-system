@@ -128,3 +128,11 @@ JWT_ALGORITHM = "HS256"
 JWT_ACCESS_TTL_MINUTES = int(
     os.getenv("JWT_ACCESS_TTL_MINUTES", "60")
 )
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'users.authentication.JWTAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+}
