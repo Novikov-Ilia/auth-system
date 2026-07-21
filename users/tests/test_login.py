@@ -200,10 +200,10 @@ class LoginTests(APITestCase):
 
 
     def test_profile_url_resolves_to_profile_view(self):
-        match = resolve("/api/profile")
+        match = resolve("/api/profile/")
 
         self.assertIs(match.func.view_class, ProfileView)
-        self.assertEqual(reverse("profile"), "/api/profile")
+        self.assertEqual(reverse("profile"), "/api/profile/")
 
     def test_profile_returns_authenticated_user_data(self):
         token = issue_access_token(self.user)
