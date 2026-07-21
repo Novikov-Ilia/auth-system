@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from .authentication import JWTAuthentication
 from users.models import AuthSession
-from .serializers import LoginSerializer, RegistrationSerializer
+from .serializers import LoginSerializer, RegistrationSerializer, ProfilePatchSerializer
 from services import jwt
 
 class RegistrationView(APIView):
@@ -79,6 +79,29 @@ class ProfileView(APIView):
 
     def get(self, request):
         user = request.user
+
+        return Response(
+            {
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "middle_name": user.middle_name,
+            }
+        )
+    
+    def patch(self, request):
+        user = request.user
+        serializer = ProfilePatchSerializer(
+            data=request.data,
+            context={"user": request.user},
+        )
+
+        serializer.is_valid(raise_exception=True)
+
+        for key in serializer.validated_data:
+            setattr(user, key, serializer.validated_data[key])
+
+        user.save()
 
         return Response(
             {

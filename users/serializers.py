@@ -82,3 +82,55 @@ class LoginSerializer(serializers.Serializer):
         return {
             'user': user,
         }
+
+class ProfilePatchSerializer(serializers.Serializer):
+    email = serializers.EmailField(write_only=True, allow_blank=True, required=False, max_length=50)
+    first_name = serializers.CharField(write_only=True, allow_blank=True, required=False, max_length=50)
+    last_name = serializers.CharField(write_only=True, allow_blank=True, required=False, max_length=50)
+    middle_name = serializers.CharField(write_only=True, allow_blank=True, required=False, max_length=50)
+
+    def validate(self, attrs):
+        email = attrs.get('email', '')
+        first_name = attrs.get('first_name', '')
+        last_name = attrs.get('last_name', '')
+        middle_name = attrs.get('middle_name', '')
+
+        data = dict()
+
+        if email:
+            data['email'] = email
+
+        if first_name:
+            data['first_name'] = first_name
+            
+        if last_name:
+            data['last_name'] = last_name
+            
+        if 'middle_name' in attrs:
+            data['middle_name'] = middle_name
+
+        if not data:
+            raise serializers.ValidationError('Переданы пустые данные')
+
+        return data
+    
+    def validate_email(self, email):
+        user = self.context["user"]
+        try:
+            email = UserManager.normalize_email(email)
+        except ValueError:
+            email = ''
+        match = User.objects.filter(email__iexact=email).exclude(pk=user.pk).first()
+        if match:
+            raise serializers.ValidationError('этот email уже занят')
+        
+        return email
+    
+    def validate_first_name(self, first_name):
+        return first_name.strip()
+    
+    def validate_last_name(self, last_name):
+        return last_name.strip()
+    
+    def validate_middle_name(self, middle_name):
+        return middle_name.strip()
