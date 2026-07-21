@@ -26,6 +26,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ["first_name", "last_name"]
     objects = UserManager()
 
+    def __str__(self):
+        return self.email
+
 
 class AuthSession(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
