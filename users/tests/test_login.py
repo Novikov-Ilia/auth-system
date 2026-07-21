@@ -280,3 +280,26 @@ class LoginTests(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_profile_delete_deactivates_user_and_revokes_all_sessions(self):
+        current_token = issue_access_token(self.user)
+        issue_access_token(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {current_token}")
+
+        response = self.client.delete(reverse("profile"))
+        self.user.refresh_from_db()
+        sessions = AuthSession.objects.filter(user=self.user)
+        me_response = self.client.get(reverse("me"))
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(self.user.is_active)
+        self.assertIsNotNone(self.user.deleted_at)
+        self.assertEqual(sessions.count(), 2)
+        self.assertFalse(sessions.filter(revoked_at__isnull=True).exists())
+        self.assertEqual(me_response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_profile_delete_rejects_request_without_access_token(self):
+        response = self.client.delete(reverse("profile"))
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response["WWW-Authenticate"], "Bearer")
