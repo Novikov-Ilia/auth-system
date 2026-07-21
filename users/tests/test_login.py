@@ -12,8 +12,8 @@ from rest_framework.test import APITestCase
 from access_control.models import Role
 from services.jwt import issue_access_token
 from users.models import AuthSession, User
-from users.serializers import LoginSerializer
-from users.views import LoginView, LogoutView, MeView
+from users.serializers import LoginSerializer, ProfilePatchSerializer
+from users.views import LoginView, LogoutView, MeView, ProfileView
 
 
 @override_settings(
@@ -197,3 +197,86 @@ class LoginTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(response["WWW-Authenticate"], "Bearer")
+
+
+    def test_profile_url_resolves_to_profile_view(self):
+        match = resolve("/api/profile")
+
+        self.assertIs(match.func.view_class, ProfileView)
+        self.assertEqual(reverse("profile"), "/api/profile")
+
+    def test_profile_returns_authenticated_user_data(self):
+        token = issue_access_token(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+        response = self.client.get(reverse("profile"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data,
+            {
+                "email": self.user.email,
+                "first_name": self.user.first_name,
+                "last_name": self.user.last_name,
+                "middle_name": self.user.middle_name,
+            },
+        )
+
+    def test_profile_rejects_request_without_access_token(self):
+        response = self.client.get(reverse("profile"))
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response["WWW-Authenticate"], "Bearer")
+
+
+    def test_profile_patch_serializer_accepts_single_field(self):
+        serializer = ProfilePatchSerializer(data={"first_name": " New name "})
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        self.assertEqual(serializer.validated_data, {"first_name": "New name"})
+
+    def test_profile_patch_updates_only_submitted_fields(self):
+        token = issue_access_token(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+        response = self.client.patch(
+            reverse("profile"),
+            {"first_name": "New name"},
+            format="json",
+        )
+        self.user.refresh_from_db()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.user.first_name, "New name")
+        self.assertEqual(self.user.last_name, "Novikov")
+        self.assertEqual(response.data["first_name"], "New name")
+
+    def test_profile_patch_allows_current_email(self):
+        token = issue_access_token(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+        response = self.client.patch(
+            reverse("profile"),
+            {"email": self.user.email},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["email"], self.user.email)
+
+    def test_profile_patch_rejects_empty_payload(self):
+        token = issue_access_token(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+        response = self.client.patch(reverse("profile"), {}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_profile_patch_rejects_request_without_access_token(self):
+        response = self.client.patch(
+            reverse("profile"),
+            {"first_name": "New name"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
