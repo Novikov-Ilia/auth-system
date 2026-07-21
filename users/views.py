@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
+from django.db import transaction
 
 from .authentication import JWTAuthentication
 from users.models import AuthSession
@@ -111,3 +112,16 @@ class ProfileView(APIView):
                 "middle_name": user.middle_name,
             }
         )
+
+    @transaction.atomic
+    def delete(self, request):
+        now = timezone.now()
+        user = request.user
+
+        user.is_active = False
+        user.deleted_at = now
+        user.save()
+
+        sessions = user.auth_sessions.filter(revoked_at=None).update(revoked_at=now)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
