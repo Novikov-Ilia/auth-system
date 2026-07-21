@@ -71,3 +71,20 @@ class LogoutView(APIView):
         session.revoked_at = timezone.now()
         session.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    
+class ProfileView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        return Response(
+            {
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "middle_name": user.middle_name,
+            }
+        )
