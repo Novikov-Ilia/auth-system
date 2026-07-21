@@ -10,7 +10,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from access_control.models import Role
-from services.jwt import issue_access_token
+from users.services.jwt import issue_access_token
 from users.models import AuthSession, User
 from users.serializers import LoginSerializer, ProfilePatchSerializer
 from users.views import LoginView, LogoutView, MeView, ProfileView

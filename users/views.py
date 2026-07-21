@@ -8,7 +8,7 @@ from django.db import transaction
 from .authentication import JWTAuthentication
 from users.models import AuthSession
 from .serializers import LoginSerializer, RegistrationSerializer, ProfilePatchSerializer
-from services import jwt
+from .services import jwt
 
 class RegistrationView(APIView):
     def post(self, request):
